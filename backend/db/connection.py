@@ -1,16 +1,7 @@
-
-from peewee import PostgresqlDatabase
-from urllib.parse import urlparse
+import asyncpg
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "URL_DE BASE DE DATOS")
+DATABASE_URL = os.environ["DATABASE_URL"]
 
-url = urlparse(DATABASE_URL)
-
-db = PostgresqlDatabase(
-    database=url.path[1:],
-    user=url.username,
-    password=url.password,
-    host=url.hostname,
-    port=url.port
-)
+async def connect_db():
+    return await asyncpg.connect(DATABASE_URL)

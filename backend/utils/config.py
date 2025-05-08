@@ -1,5 +1,4 @@
-
 import os
 
 class Config:
-    SECRET_KEY = os.getenv("SECRET_KEY", "tukey")
+    SECRET_KEY = os.environ["SECRET_KEY"]
