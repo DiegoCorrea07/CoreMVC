@@ -8,82 +8,100 @@ from backend.models.aircraft import Aircraft
 from backend.repositories.real_coverage_repository import RealCoverageRepository
 from backend.repositories.coverage_alert_repository import CoverageAlertRepository
 import decimal
+import math
 
 
 class CoverageService:
-    async def calculate_coverage_for_event(self, event_id, status_filter=None, page=1,
-                                           limit=10):
-        results = []
-        all_event_routes_for_event = []
+    async def calculate_coverage_for_event(self, event_id, status_filter=None, page=1, limit=10):
+        subquery_flights_capacity = (
+            Flight.select(
+                # Aquí Peewee debería manejar el mapeo de `ruta_evento` a `ruta_evento_id` si está configurado así.
+                # Lo importante es el alias que se le da en la base de datos.
+                Flight.ruta_evento,  # Asumiendo que esta es la propiedad en tu modelo Flight
+                fn.SUM(Aircraft.capacidad).alias('total_capacidad_vuelos')
+            )
+            .join(Aircraft, on=(Flight.aeronave == Aircraft.id))
+            .group_by(Flight.ruta_evento)  # Asumiendo esta es la propiedad en tu modelo Flight
+            .alias('flight_capacity_subquery')
+        )
 
-        event_routes_full_query = EventRoute.select(
-            EventRoute, Route, Event
-        ).where(EventRoute.evento == event_id) \
-            .join(Route, JOIN.LEFT_OUTER, on=(EventRoute.ruta == Route.id)) \
-            .join(Event, JOIN.LEFT_OUTER, on=(EventRoute.evento == Event.id))
+        query = EventRoute.select(
+            EventRoute.id,
+            EventRoute.demanda_estimada,
+            Route.origen,
+            Route.destino,
+            Event.nombre_evento,
+            subquery_flights_capacity.c.total_capacidad_vuelos.alias('capacidad_real_vuelos')
+        ).join(
+            Route, on=(EventRoute.ruta == Route.id)
+        ).join(
+            Event, on=(EventRoute.evento == Event.id)
+        ).left_outer_join(
+            subquery_flights_capacity, on=(EventRoute.id == subquery_flights_capacity.c.ruta_evento_id)
+            # <--- ¡CAMBIO AQUÍ!
+        )
 
-        for er_full in event_routes_full_query:
-            demanda_estimada_full = float(er_full.demanda_estimada) if isinstance(er_full.demanda_estimada,
-                                                                                  decimal.Decimal) else float(
-                er_full.demanda_estimada)
+        if event_id is not None:
+            query = query.where(EventRoute.evento == event_id)
 
-            capacidad_real_full_query = Flight.select(fn.SUM(Aircraft.capacidad)) \
-                .join(Aircraft) \
-                .where(Flight.ruta_evento == er_full.id) \
-                .scalar()
-            capacidad_real_full = float(capacidad_real_full_query) if isinstance(capacidad_real_full_query,
-                                                                                 decimal.Decimal) else (
-                capacidad_real_full_query if capacidad_real_full_query is not None else 0)
+        all_event_routes_processed = []
+        # El resto del método calculate_coverage_for_event es el mismo que te di anteriormente
+        # ... (código restante sin cambios) ...
 
-            if demanda_estimada_full > 0:
-                porcentaje_cobertura_full = (capacidad_real_full / demanda_estimada_full) * 100
+        for er_data_row in query.dicts().iterator():
+            demanda_estimada = float(er_data_row['demanda_estimada']) if isinstance(er_data_row['demanda_estimada'],
+                                                                                    decimal.Decimal) else float(
+                er_data_row['demanda_estimada'])
+            capacidad_real = float(er_data_row['capacidad_real_vuelos']) if er_data_row[
+                                                                                'capacidad_real_vuelos'] is not None else 0.0
+
+            if demanda_estimada > 0:
+                porcentaje_cobertura = (capacidad_real / demanda_estimada) * 100
             else:
-                porcentaje_cobertura_full = 100.0
+                porcentaje_cobertura = 100.0
 
-            if porcentaje_cobertura_full >= 100:
-                estado_cobertura_full = "Cubierta"
-            elif porcentaje_cobertura_full >= 70:
-                estado_cobertura_full = "Parcial"
+            if porcentaje_cobertura >= 100:
+                estado_cobertura = "Cubierta"
+            elif porcentaje_cobertura >= 70:
+                estado_cobertura = "Parcial"
             else:
-                estado_cobertura_full = "Crítica"
+                estado_cobertura = "Crítica"
 
-            all_event_routes_for_event.append({
-                "id": er_full.id,
-                "nombre_ruta": f"{er_full.ruta.origen}-{er_full.ruta.destino}",
-                "nombre_evento": er_full.evento.nombre_evento,
-                "demanda_estimada": demanda_estimada_full,
-                "capacidad_real": capacidad_real_full,
-                "porcentaje_cobertura": round(porcentaje_cobertura_full, 2),
-                "estado_cobertura": estado_cobertura_full,
-                "fecha_calculo": datetime.datetime.now().isoformat()
-            })
+            if status_filter is None or estado_cobertura.lower() == status_filter.lower():
+                all_event_routes_processed.append({
+                    "id": er_data_row['id'],
+                    "nombre_ruta": f"{er_data_row['origen']}-{er_data_row['destino']}",
+                    "nombre_evento": er_data_row['nombre_evento'],
+                    "demanda_estimada": demanda_estimada,
+                    "capacidad_real": capacidad_real,
+                    "porcentaje_cobertura": round(porcentaje_cobertura, 2),
+                    "estado_cobertura": estado_cobertura,
+                    "fecha_calculo": datetime.datetime.now().isoformat()
+                })
 
-        total_routes = len(all_event_routes_for_event)
-        cubiertas_count = sum(1 for r in all_event_routes_for_event if r['estado_cobertura'] == "Cubierta")
-        parciales_count = sum(1 for r in all_event_routes_for_event if r['estado_cobertura'] == "Parcial")
-        criticas_count = sum(1 for r in all_event_routes_for_event if r['estado_cobertura'] == "Crítica")
+        total_items_filtered_by_status = len(all_event_routes_processed)
 
-        porcentaje_cubiertas = round((cubiertas_count / total_routes) * 100, 2) if total_routes > 0 else 0
-        porcentaje_parciales = round((parciales_count / total_routes) * 100, 2) if total_routes > 0 else 0
-        porcentaje_criticas = round((criticas_count / total_routes) * 100, 2) if total_routes > 0 else 0
+        cubiertas_count = sum(1 for r in all_event_routes_processed if r['estado_cobertura'] == "Cubierta")
+        parciales_count = sum(1 for r in all_event_routes_processed if r['estado_cobertura'] == "Parcial")
+        criticas_count = sum(1 for r in all_event_routes_processed if r['estado_cobertura'] == "Crítica")
+
+        porcentaje_cubiertas = round((cubiertas_count / total_items_filtered_by_status) * 100,
+                                     2) if total_items_filtered_by_status > 0 else 0
+        porcentaje_parciales = round((parciales_count / total_items_filtered_by_status) * 100,
+                                     2) if total_items_filtered_by_status > 0 else 0
+        porcentaje_criticas = round((criticas_count / total_items_filtered_by_status) * 100,
+                                    2) if total_items_filtered_by_status > 0 else 0
 
         summary_metrics = {
             "cubiertas": porcentaje_cubiertas,
             "parciales": porcentaje_parciales,
             "criticas": porcentaje_criticas,
-            "total_routes": total_routes
+            "total_routes": total_items_filtered_by_status
         }
-
-        filtered_paged_routes = all_event_routes_for_event
-
-        if status_filter:
-            filtered_paged_routes = [
-                r for r in filtered_paged_routes if r['estado_cobertura'].lower() == status_filter.lower()
-            ]
 
         start_index = (page - 1) * limit
         end_index = start_index + limit
-        paged_routes = filtered_paged_routes[start_index:end_index]
+        paged_routes = all_event_routes_processed[start_index:end_index]
 
         for er_data in paged_routes:
             original_er = EventRoute.get_or_none(EventRoute.id == er_data['id'])
@@ -111,11 +129,13 @@ class CoverageService:
                         fecha_generacion=datetime.datetime.now()
                     )
 
+        total_pages = math.ceil(total_items_filtered_by_status / limit) if total_items_filtered_by_status > 0 else 1
+
         return {
             "dashboard_data": paged_routes,
             "summary_metrics": summary_metrics,
-            "total_pages": (len(filtered_paged_routes) + limit - 1) // limit,
-            "total_items": len(filtered_paged_routes)
+            "total_pages": total_pages,
+            "total_items": total_items_filtered_by_status
         }
 
     async def get_route_detail(self, ruta_evento_id):
@@ -153,18 +173,14 @@ class CoverageService:
         if isinstance(fecha_fin_evento, datetime.date) and not isinstance(fecha_fin_evento, datetime.datetime):
             fecha_fin_evento = datetime.datetime.combine(fecha_fin_evento, datetime.time.max)
 
-        # 1. Obtener la capacidad total ofrecida agrupada por día de la semana (número de 0-6)
-        # Usamos EXTRACT(DOW FROM fecha_salida) para PostgreSQL, que devuelve 0 (Domingo) a 6 (Sábado)
         flights_weekly_capacity_query = Flight.select(
-            # ¡CAMBIO A T2 AQUÍ!
-            SQL("EXTRACT('dow' FROM t2.fecha_salida) AS day_of_week_num"),
+            SQL("EXTRACT('dow' FROM fecha_salida) AS day_of_week_num"),
             fn.SUM(Aircraft.capacidad).alias('total_capacity_for_day')
         ).join(Aircraft).where(
             (Flight.ruta_evento == event_route.id) &
             (Flight.fecha_salida >= fecha_inicio_evento) &
             (Flight.fecha_salida <= fecha_fin_evento)
-        ).group_by(SQL("EXTRACT('dow' FROM t2.fecha_salida)")).dicts()
-
+        ).group_by(SQL("EXTRACT('dow' FROM fecha_salida)")).dicts()
 
         weekly_capacities_map = {
             int(entry['day_of_week_num']): float(entry['total_capacity_for_day'])
@@ -182,17 +198,15 @@ class CoverageService:
             6: "Sábado"
         }
 
-        # Construir la lista de cobertura por día de la semana
         weekly_coverage_data = []
-        for dow_num in range(7):  # Iterar por los 7 días de la semana (0 a 6)
+        for dow_num in range(7):
             day_name = day_names_map[dow_num]
             capacidad_ofrecida_semana_dia = weekly_capacities_map.get(dow_num, 0)
 
-            # Cálculo del porcentaje: Capacidad ofrecida para ese DÍA DE LA SEMANA / Demanda TOTAL del evento
             if demanda_estimada > 0:
                 percentage = (capacidad_ofrecida_semana_dia / demanda_estimada) * 100
             else:
-                percentage = 0.0  # No hay demanda total, no hay porcentaje de cobertura significativo
+                percentage = 0.0
 
             weekly_coverage_data.append({
                 "day": day_name,

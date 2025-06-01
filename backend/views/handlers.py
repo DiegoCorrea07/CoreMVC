@@ -447,7 +447,8 @@ class CoverageAlertHandler(CORSRequestHandler):
             print(f"\n!!!! ERROR CAPTURADO EN COVERAGEALERTHANDLER.GET: {e} !!!!")
             traceback.print_exc()
             self.set_status(500)
-            self.write({"error": f"Error al obtener alertas de cobertura: {str(e)}. Verifique la consola del servidor."})
+            self.write(
+                {"error": f"Error al obtener alertas de cobertura: {str(e)}. Verifique la consola del servidor."})
 
 
 # ---- HANDLER PRINCIPAL DEL CORE ----
@@ -459,7 +460,6 @@ class CoverageHandler(CORSRequestHandler):
     @require_permission("consultar_panel")
     async def get(self, ruta_evento_id=None):
         try:
-            # Obtención de user_data (de tu BaseHandler o decorador @authenticated_user)
             user_data = self.current_user
             if not user_data:
                 self.set_status(401)
@@ -467,7 +467,6 @@ class CoverageHandler(CORSRequestHandler):
                 return
 
             if ruta_evento_id:
-                # Si ruta_evento_id está presente, es la solicitud de detalle de ruta
                 try:
                     ruta_evento_id = int(ruta_evento_id)
                 except ValueError:
@@ -477,49 +476,48 @@ class CoverageHandler(CORSRequestHandler):
 
                 data = await self.coverage_controller.get_route_detail_data(ruta_evento_id)
 
-                if data is None:  # Si el servicio devuelve None, significa que no se encontró la ruta
+                if data is None:
                     self.set_status(404)
                     self.write(json.dumps({"message": f"Detalle de ruta con ID {ruta_evento_id} no encontrado."}))
                     return
             else:
-                # Si ruta_evento_id es None, es la solicitud del dashboard
                 event_id = self.get_query_argument("event_id", None)
-                status_filter = self.get_query_argument("status", None)  # Tu frontend envía 'status'
+                status_filter = self.get_query_argument("status_filter", None)
                 page = self.get_query_argument("page", "1")
                 limit = self.get_query_argument("limit", "10")
 
-                if not event_id:
-                    self.set_status(400)
-                    self.write(json.dumps({"message": "El parámetro 'event_id' es requerido para el dashboard."}))
-                    return
+                if event_id:
+                    try:
+                        event_id = int(event_id)
+                    except ValueError:
+                        self.set_status(400)
+                        self.write(json.dumps(
+                            {"message": "El parámetro 'event_id' debe ser un número entero válido si se proporciona."}))
+                        return
 
                 try:
-                    event_id = int(event_id)
                     page = int(page)
                     limit = int(limit)
                 except ValueError:
                     self.set_status(400)
                     self.write(json.dumps(
-                        {"message": "Los parámetros 'event_id', 'page' y 'limit' deben ser números enteros válidos."}))
+                        {"message": "Los parámetros 'page' y 'limit' deben ser números enteros válidos."}))
                     return
 
                 data = await self.coverage_controller.get_dashboard_data(
                     user_data, event_id, status_filter, page, limit
                 )
 
-            # Establecer el tipo de contenido y enviar la respuesta JSON
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(data))
 
-        except ValueError as e:  # Para errores de validación de IDs o formatos (adicionales a los try-except internos)
+        except ValueError as e:
             self.set_status(400)
             self.write(json.dumps({"message": str(e)}))
 
         except Exception as e:
-            # Captura cualquier otra excepción no manejada y devuelve un error 500
             print(f"!!!! ERROR NO MANEJADO EN COVERAGEHANDLER.GET: {e} !!!!")
-            traceback.print_exc()  # Imprime el stack trace completo para depuración
+            traceback.print_exc()
             self.set_status(500)
             self.write(json.dumps(
                 {"message": f"Error interno del servidor. Consulte los logs del servidor para más detalles."}))
-
