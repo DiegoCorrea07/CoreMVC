@@ -1,4 +1,3 @@
-
 from backend.models.event import Event
 
 class EventRepository:
