@@ -15,13 +15,11 @@ class CoverageService:
     async def calculate_coverage_for_event(self, event_id, status_filter=None, page=1, limit=10):
         subquery_flights_capacity = (
             Flight.select(
-                # Aquí Peewee debería manejar el mapeo de `ruta_evento` a `ruta_evento_id` si está configurado así.
-                # Lo importante es el alias que se le da en la base de datos.
-                Flight.ruta_evento,  # Asumiendo que esta es la propiedad en tu modelo Flight
+                Flight.ruta_evento,
                 fn.SUM(Aircraft.capacidad).alias('total_capacidad_vuelos')
             )
             .join(Aircraft, on=(Flight.aeronave == Aircraft.id))
-            .group_by(Flight.ruta_evento)  # Asumiendo esta es la propiedad en tu modelo Flight
+            .group_by(Flight.ruta_evento)
             .alias('flight_capacity_subquery')
         )
 
