@@ -1,6 +1,8 @@
 import jwt
 from functools import wraps
 from backend.utils.config import Config
+from backend.utils.permissions import ROLES_PERMISOS
+
 
 def authenticated_user(method):
     """
@@ -38,3 +40,27 @@ def authenticated_user(method):
             self.write({"message": f"Error interno de autenticación: {str(e)}"})
 
     return wrapper
+
+def require_permission(permission_name):
+    def decorator(method):
+        @wraps(method)
+        async def wrapper(self, *args, **kwargs):
+            user = getattr(self, 'current_user', None)
+
+            if not user:
+                self.set_status(401)
+                self.write({"message": "No autorizado: Usuario no autenticado."})
+                return
+
+            role = user.get("role")
+
+            allowed_permissions = ROLES_PERMISOS.get(role, [])
+
+            if permission_name not in allowed_permissions:
+                self.set_status(403)
+                self.write({"message": f"Acceso denegado: Se requiere permiso '{permission_name}'."})
+                return
+
+            return await method(self, *args, **kwargs)
+        return wrapper
+    return decorator

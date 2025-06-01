@@ -5,7 +5,7 @@ import traceback
 from backend.utils.config import Config
 from backend.utils.serializers import model_to_dict
 from peewee import IntegrityError
-from backend.utils.auth import authenticated_user
+from backend.utils.auth import authenticated_user, require_permission
 from backend.controllers.aircraft_controller import AircraftController
 from backend.controllers.route_controller import RouteController
 from backend.controllers.flight_controller import FlightController
@@ -28,7 +28,8 @@ class CORSRequestHandler(tornado.web.RequestHandler):
 
 class AircraftHandler(CORSRequestHandler):
     @authenticated_user
-    async def get(self, aircraft_id=None): # Añadir id opcional para GET por ID
+    @require_permission("gestionar_aeronaves")
+    async def get(self, aircraft_id=None):
         try:
             if aircraft_id:
                 aircraft = AircraftController.get_aircraft(int(aircraft_id))
@@ -47,6 +48,7 @@ class AircraftHandler(CORSRequestHandler):
             self.write({"error": f"Error al obtener aeronaves: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_aeronaves")
     async def post(self):
         try:
             data = json.loads(self.request.body)
@@ -65,6 +67,7 @@ class AircraftHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_aeronaves")
     async def delete(self, aircraft_id):
         try:
             success = AircraftController.delete_aircraft(int(aircraft_id))
@@ -82,6 +85,7 @@ class AircraftHandler(CORSRequestHandler):
 
 class RouteHandler(CORSRequestHandler):
     @authenticated_user
+    @require_permission("gestionar_rutas")
     async def get(self, route_id=None): # Añadir id opcional
         try:
             if route_id:
@@ -101,6 +105,7 @@ class RouteHandler(CORSRequestHandler):
             self.write({"error": f"Error al obtener rutas: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_rutas")
     async def post(self):
         try:
             data = json.loads(self.request.body)
@@ -116,6 +121,7 @@ class RouteHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_rutas")
     async def delete(self, route_id):
         try:
             success = RouteController.delete_route(int(route_id))
@@ -133,6 +139,7 @@ class RouteHandler(CORSRequestHandler):
 
 class FlightHandler(CORSRequestHandler):
     @authenticated_user
+    @require_permission("gestionar_vuelos")
     async def get(self):
         try:
             flights = FlightController.list_flights()
@@ -144,6 +151,7 @@ class FlightHandler(CORSRequestHandler):
             self.write({"error": f"Error al obtener vuelos: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_vuelos")
     async def post(self):
         try:
             data = json.loads(self.request.body)
@@ -168,6 +176,7 @@ class FlightHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_vuelos")
     async def delete(self, flight_id):
         try:
             success = FlightController.delete_flight(int(flight_id))
@@ -185,6 +194,7 @@ class FlightHandler(CORSRequestHandler):
 
 class UserHandler(CORSRequestHandler):
     @authenticated_user
+    @require_permission("gestionar_usuarios")
     async def get(self, user_id=None):
         try:
             if user_id:
@@ -221,6 +231,7 @@ class UserHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_usuarios")
     async def delete(self, user_id):
         try:
             success = UserController.delete_user(int(user_id))
@@ -261,6 +272,7 @@ class LoginHandler(CORSRequestHandler):
 
 class EventHandler(CORSRequestHandler):
     @authenticated_user
+    @require_permission("gestionar_eventos")
     async def get(self, event_id=None):
         try:
             if event_id:
@@ -280,6 +292,7 @@ class EventHandler(CORSRequestHandler):
             self.write({"error": f"Error al obtener eventos: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_eventos")
     async def post(self):
         try:
             data = json.loads(self.request.body)
@@ -301,6 +314,7 @@ class EventHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_eventos")
     async def delete(self, event_id):
         try:
             success = EventController.delete_event(int(event_id))
@@ -317,6 +331,7 @@ class EventHandler(CORSRequestHandler):
 
 class EventRouteHandler(CORSRequestHandler):
     @authenticated_user
+    @require_permission("gestionar_demanda")
     async def get(self, event_route_id=None):
         try:
             if event_route_id:
@@ -336,6 +351,7 @@ class EventRouteHandler(CORSRequestHandler):
             self.write({"error": f"Error al obtener rutas de evento: {str(e)}. Verifique la consola del servidor para más detalles."})
 
     @authenticated_user
+    @require_permission("gestionar_demanda")
     async def post(self):
         try:
             data = json.loads(self.request.body)
@@ -358,6 +374,7 @@ class EventRouteHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_demanda")
     async def put(self, event_route_id):
         try:
             data = json.loads(self.request.body)
@@ -373,6 +390,7 @@ class EventRouteHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}. Verifique la consola del servidor."})
 
     @authenticated_user
+    @require_permission("gestionar_demanda")
     async def delete(self, event_route_id):
         try:
             success = EventRouteController.delete_event_route(int(event_route_id))
@@ -390,6 +408,7 @@ class EventRouteHandler(CORSRequestHandler):
 
 class RealCoverageHandler(CORSRequestHandler):
     @authenticated_user
+    @require_permission("consultar_panel")
     async def get(self, coverage_id=None):
         try:
             if coverage_id:
@@ -411,6 +430,7 @@ class RealCoverageHandler(CORSRequestHandler):
 
 class CoverageAlertHandler(CORSRequestHandler):
     @authenticated_user
+    @require_permission("ver_alertas")
     async def get(self, alert_id=None):
         try:
             if alert_id:
@@ -436,10 +456,10 @@ class CoverageHandler(CORSRequestHandler):
         self.coverage_controller = coverage_controller
 
     @authenticated_user
-    async def get(self, ruta_evento_id=None):  # <--- AQUI ESTÁ EL CAMBIO CLAVE: AÑADE ruta_evento_id=None
+    @require_permission("consultar_panel")
+    async def get(self, ruta_evento_id=None):
         try:
             # Obtención de user_data (de tu BaseHandler o decorador @authenticated_user)
-            # Asegúrate de que 'self.current_user' esté correctamente configurado por el decorador
             user_data = self.current_user
             if not user_data:
                 self.set_status(401)
@@ -494,10 +514,7 @@ class CoverageHandler(CORSRequestHandler):
         except ValueError as e:  # Para errores de validación de IDs o formatos (adicionales a los try-except internos)
             self.set_status(400)
             self.write(json.dumps({"message": str(e)}))
-        # Si tienes una clase de error APIError, descomenta y úsala
-        # except APIError as e:
-        #     self.set_status(e.status_code)
-        #     self.write(json.dumps({"message": str(e)}))
+
         except Exception as e:
             # Captura cualquier otra excepción no manejada y devuelve un error 500
             print(f"!!!! ERROR NO MANEJADO EN COVERAGEHANDLER.GET: {e} !!!!")
