@@ -1,4 +1,3 @@
-
 from peewee import Model, CharField, IntegerField
 from backend.db.connection import db
 
