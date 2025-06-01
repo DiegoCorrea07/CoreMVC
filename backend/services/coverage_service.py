@@ -36,7 +36,7 @@ class CoverageService:
             Event, on=(EventRoute.evento == Event.id)
         ).left_outer_join(
             subquery_flights_capacity, on=(EventRoute.id == subquery_flights_capacity.c.ruta_evento_id)
-            # <--- ¡CAMBIO AQUÍ!
+
         )
 
         if event_id is not None:
