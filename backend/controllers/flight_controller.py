@@ -53,7 +53,7 @@ class FlightController:
                     f"({fecha_inicio_evento.strftime('%Y-%m-%d %H:%M')} a {fecha_fin_evento.strftime('%Y-%m-%d %H:%M')})."
                 )
 
-            # 5. Opcional: Validar que fecha_salida_vuelo sea anterior o igual a fecha_llegada_vuelo
+            # 5. Validar que fecha_salida_vuelo sea anterior o igual a fecha_llegada_vuelo
             if fecha_salida_vuelo > fecha_llegada_vuelo:
                 raise ValueError("La fecha de salida del vuelo no puede ser posterior a la fecha de llegada.")
 
@@ -79,7 +79,7 @@ class FlightController:
 
             # 6. Si todas las validaciones pasan, procede con la creación
             return FlightRepository.create(
-                codigo_vuelo, aeronave_id, ruta_evento_id, fecha_salida_vuelo, fecha_llegada_vuelo # ¡Pasar objetos datetime!
+                codigo_vuelo, aeronave_id, ruta_evento_id, fecha_salida_vuelo, fecha_llegada_vuelo
             )
 
     @staticmethod
