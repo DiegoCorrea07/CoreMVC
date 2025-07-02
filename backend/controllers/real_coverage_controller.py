@@ -1,26 +1,36 @@
-from backend.repositories.real_coverage_repository import RealCoverageRepository
 import datetime
 
-
 class RealCoverageController:
-    @staticmethod
-    def create_real_coverage(ruta_evento_id, capacidad_real, porcentaje_cobertura, estado_cobertura):
+    """
+    Controlador para orquestar las operaciones de Cobertura Real.
+    Recibe un repositorio a través de inyección de dependencias.
+    """
 
-        return RealCoverageRepository.create(ruta_evento_id, capacidad_real, porcentaje_cobertura, estado_cobertura,
-                                             datetime.datetime.now())
+    # 1. Creamos un constructor que RECIBE el repositorio.
+    def __init__(self, repository):
+        self.repository = repository
 
-    @staticmethod
-    def get_real_coverage(coverage_id):
-        return RealCoverageRepository.get_by_id(coverage_id)
+    # 2. Quitamos @staticmethod y usamos 'self' para acceder al repositorio.
+    def create_real_coverage(self, ruta_evento_id, capacidad_real, porcentaje_cobertura, estado_cobertura):
+        # La lógica de negocio (como obtener la fecha actual) permanece aquí.
+        fecha_calculo = datetime.datetime.now()
+        # 3. Usamos la instancia del repositorio que recibimos.
+        return self.repository.create(
+            ruta_evento_id,
+            capacidad_real,
+            porcentaje_cobertura,
+            estado_cobertura,
+            fecha_calculo
+        )
 
-    @staticmethod
-    def list_real_coverages():
-        return RealCoverageRepository.get_all()
+    def get_real_coverage(self, coverage_id):
+        return self.repository.get_by_id(coverage_id)
 
-    @staticmethod
-    def delete_real_coverage(coverage_id):
-        return RealCoverageRepository.delete(coverage_id)
+    def list_real_coverages(self):
+        return self.repository.get_all()
 
-    @staticmethod
-    def get_latest_coverage_for_event_route(ruta_evento_id):
-        return RealCoverageRepository.get_latest_for_event_route(ruta_evento_id)
+    def delete_real_coverage(self, coverage_id):
+        return self.repository.delete(coverage_id)
+
+    def get_latest_coverage_for_event_route(self, ruta_evento_id):
+        return self.repository.get_latest_for_event_route(ruta_evento_id)
