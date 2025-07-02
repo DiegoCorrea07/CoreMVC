@@ -6,8 +6,8 @@ from backend.models.event import Event
 from peewee import JOIN
 
 class FlightRepository:
-    @staticmethod
-    def create(codigo_vuelo, aeronave_id, ruta_evento_id, fecha_salida, fecha_llegada):
+    # SE ELIMINA @staticmethod
+    def create(self, codigo_vuelo, aeronave_id, ruta_evento_id, fecha_salida, fecha_llegada):
         return Flight.create(
             codigo_vuelo=codigo_vuelo,
             aeronave=aeronave_id,
@@ -16,8 +16,8 @@ class FlightRepository:
             fecha_llegada=fecha_llegada
         )
 
-    @staticmethod
-    def get_by_id(flight_id):
+    # SE ELIMINA @staticmethod
+    def get_by_id(self, flight_id):
         return Flight.select(
                 Flight,
                 Aircraft,
@@ -32,8 +32,8 @@ class FlightRepository:
             .where(Flight.id == flight_id)\
             .get_or_none()
 
-    @staticmethod
-    def get_all():
+    # SE ELIMINA @staticmethod
+    def get_all(self):
         return list(
             Flight.select(
                 Flight,
@@ -49,8 +49,8 @@ class FlightRepository:
             .order_by(Flight.id)
         )
 
-    @staticmethod
-    def delete(flight_id):
+    # SE ELIMINA @staticmethod
+    def delete(self, flight_id):
         flight = Flight.get_or_none(Flight.id == flight_id)
         if flight:
             flight.delete_instance()
