@@ -3,9 +3,15 @@ from backend.models.route import Route
 from backend.models.event import Event
 from peewee import JOIN, IntegrityError
 
+
 class EventRouteRepository:
-    @staticmethod
-    def create(ruta_id, evento_id, demanda_estimada):
+    """
+    Repositorio para gestionar las operaciones de la base de datos para las Rutas de Evento.
+    Los métodos son de instancia para permitir la Inyección de Dependencias.
+    """
+
+    # SE ELIMINA @staticmethod
+    def create(self, ruta_id, evento_id, demanda_estimada):
         try:
             return EventRoute.create(
                 ruta=ruta_id,
@@ -13,38 +19,37 @@ class EventRouteRepository:
                 demanda_estimada=demanda_estimada
             )
         except IntegrityError:
+            # Capturar el error de integridad y lanzar un error más descriptivo
+            # es una excelente práctica que se mantiene.
             raise ValueError("Esta ruta ya está asignada a este evento.")
 
-
-    @staticmethod
-    def get_by_id(event_route_id):
-
+    # SE ELIMINA @staticmethod
+    def get_by_id(self, event_route_id):
         return EventRoute.select(
-                EventRoute,
-                Route,
-                Event
-            )\
-            .join(Route, JOIN.LEFT_OUTER, on=(EventRoute.ruta == Route.id))\
-            .join(Event, JOIN.LEFT_OUTER, on=(EventRoute.evento == Event.id))\
-            .where(EventRoute.id == event_route_id)\
+            EventRoute,
+            Route,
+            Event
+        ) \
+            .join(Route, JOIN.LEFT_OUTER, on=(EventRoute.ruta == Route.id)) \
+            .join(Event, JOIN.LEFT_OUTER, on=(EventRoute.evento == Event.id)) \
+            .where(EventRoute.id == event_route_id) \
             .get_or_none()
 
-    @staticmethod
-    def get_all():
-
+    # SE ELIMINA @staticmethod
+    def get_all(self):
         return list(
             EventRoute.select(
                 EventRoute,
                 Route,
                 Event
-            )\
-            .join(Route, JOIN.LEFT_OUTER, on=(EventRoute.ruta == Route.id))\
-            .join(Event, JOIN.LEFT_OUTER, on=(EventRoute.evento == Event.id))\
-            .order_by(EventRoute.id)
+            ) \
+                .join(Route, JOIN.LEFT_OUTER, on=(EventRoute.ruta == Route.id)) \
+                .join(Event, JOIN.LEFT_OUTER, on=(EventRoute.evento == Event.id)) \
+                .order_by(EventRoute.id)
         )
 
-    @staticmethod
-    def update(event_route_id, demanda_estimada):
+    # SE ELIMINA @staticmethod
+    def update(self, event_route_id, demanda_estimada):
         event_route = EventRoute.get_or_none(EventRoute.id == event_route_id)
         if event_route:
             event_route.demanda_estimada = demanda_estimada
@@ -52,16 +57,16 @@ class EventRouteRepository:
             return event_route
         return None
 
-    @staticmethod
-    def delete(event_route_id):
+    # SE ELIMINA @staticmethod
+    def delete(self, event_route_id):
         event_route = EventRoute.get_or_none(EventRoute.id == event_route_id)
         if event_route:
             event_route.delete_instance()
             return True
         return False
 
-    @staticmethod
-    def get_by_route_and_event(route_id, event_id):
+    # SE ELIMINA @staticmethod
+    def get_by_route_and_event(self, route_id, event_id):
         return EventRoute.get_or_none(
             (EventRoute.ruta == route_id) & (EventRoute.evento == event_id)
         )
