@@ -27,5 +27,15 @@ class AircraftController:
     def list_aircrafts(self):
         return self.repository.get_all()
 
+    def update_aircraft(self, aircraft_id, **kwargs):
+
+        if 'capacidad' in kwargs and int(kwargs['capacidad']) <= 0:
+            raise ValueError("La capacidad debe ser un número positivo.")
+
+        updated = self.repository.update(aircraft_id, **kwargs)
+        if not updated:
+            raise ValueError("Aeronave no encontrada o datos inválidos.")
+        return self.repository.get_by_id(aircraft_id)
+
     def delete_aircraft(self, aircraft_id):
         return self.repository.delete(aircraft_id)

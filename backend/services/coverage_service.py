@@ -2,7 +2,7 @@ import datetime
 import math
 from peewee import fn, SQL
 
-# 1. Importa las nuevas estrategias que creaste
+# 1. Importa las nuevas estrategias
 from backend.strategies.coverage_strategies import (
     CriticalStatusStrategy,
     PartialStatusStrategy,
@@ -40,7 +40,7 @@ class CoverageService:
         return "Indefinido"  # Un valor por defecto si ninguna estrategia aplica
 
     async def calculate_coverage_for_event(self, event_id, status_filter=None, page=1, limit=10):
-        # La consulta a la base de datos se mantiene igual...
+
         subquery_flights_capacity = (
             Flight.select(
                 Flight.ruta_evento,
@@ -97,7 +97,6 @@ class CoverageService:
                     "fecha_calculo": datetime.datetime.now().isoformat()
                 })
 
-        # El resto del método (paginación, creación de alertas, etc.) se mantiene exactamente igual...
         total_items_filtered_by_status = len(all_event_routes_processed)
         cubiertas_count = sum(1 for r in all_event_routes_processed if r['estado_cobertura'] == "Cubierta")
         parciales_count = sum(1 for r in all_event_routes_processed if r['estado_cobertura'] == "Parcial")

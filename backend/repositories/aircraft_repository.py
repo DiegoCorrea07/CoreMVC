@@ -19,6 +19,15 @@ class AircraftRepository:
     def get_all(self):
         return list(Aircraft.select())
 
+    def update(self, aircraft_id, **kwargs):
+        # Filtra los campos permitidos para evitar errores
+        allowed_fields = ['matricula', 'modelo', 'capacidad']
+        update_data = {k: v for k, v in kwargs.items() if k in allowed_fields}
+
+        query = Aircraft.update(**update_data).where(Aircraft.id == aircraft_id)
+        rows_updated = query.execute()
+        return rows_updated > 0
+
     # SE ELIMINA @staticmethod
     def delete(self, aircraft_id):
         aircraft = Aircraft.get_or_none(Aircraft.id == aircraft_id)

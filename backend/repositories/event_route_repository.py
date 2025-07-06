@@ -20,7 +20,6 @@ class EventRouteRepository:
             )
         except IntegrityError:
             # Capturar el error de integridad y lanzar un error más descriptivo
-            # es una excelente práctica que se mantiene.
             raise ValueError("Esta ruta ya está asignada a este evento.")
 
     # SE ELIMINA @staticmethod
@@ -49,13 +48,29 @@ class EventRouteRepository:
         )
 
     # SE ELIMINA @staticmethod
-    def update(self, event_route_id, demanda_estimada):
-        event_route = EventRoute.get_or_none(EventRoute.id == event_route_id)
-        if event_route:
-            event_route.demanda_estimada = demanda_estimada
-            event_route.save()
-            return event_route
-        return None
+    def update(self, event_route_id, **kwargs):
+        # Definimos todos los campos que se pueden actualizar
+        allowed_fields = ['ruta_id', 'evento_id', 'demanda_estimada']
+        update_data = {k: v for k, v in kwargs.items() if k in allowed_fields}
+
+        # "Traducimos" los nombres para que coincidan con los del modelo de Peewee
+        if 'ruta_id' in update_data:
+            update_data['ruta'] = update_data.pop('ruta_id')
+
+        if 'evento_id' in update_data:
+            update_data['evento'] = update_data.pop('evento_id')
+
+        # Si no hay datos válidos para actualizar, no hacemos nada
+        if not update_data:
+            return False
+
+        try:
+            query = EventRoute.update(**update_data).where(EventRoute.id == event_route_id)
+            rows_updated = query.execute()
+            return rows_updated > 0
+        except IntegrityError:
+            # Esto previene que se asigne una combinación de ruta y evento que ya existe
+            raise ValueError("Error: La combinación de esta ruta y evento ya existe.")
 
     # SE ELIMINA @staticmethod
     def delete(self, event_route_id):

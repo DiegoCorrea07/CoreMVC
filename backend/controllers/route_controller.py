@@ -26,5 +26,14 @@ class RouteController:
     def list_routes(self):
         return self.repository.get_all()
 
+    def update_route(self, route_id, **kwargs):
+        if 'distancia' in kwargs and int(kwargs['distancia']) <= 0:
+            raise ValueError("La distancia debe ser un número positivo.")
+
+        updated = self.repository.update(route_id, **kwargs)
+        if not updated:
+            raise ValueError("Ruta no encontrada o datos inválidos.")
+        return self.repository.get_by_id(route_id)
+
     def delete_route(self, route_id):
         return self.repository.delete(route_id)

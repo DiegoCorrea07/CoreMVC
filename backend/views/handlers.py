@@ -70,6 +70,21 @@ class AircraftHandler(CORSRequestHandler):
 
     @authenticated_user
     @require_permission("gestionar_aeronaves")
+    async def put(self, aircraft_id):
+        try:
+            data = json.loads(self.request.body)
+            updated_aircraft = self.controller.update_aircraft(int(aircraft_id), **data)
+            self.write({"aircraft": model_to_dict(updated_aircraft)})
+        except ValueError as ve:
+            self.set_status(400)
+            self.write({"error": str(ve)})
+        except Exception as e:
+            self.set_status(500)
+            self.write({"error": f"Error interno del servidor: {str(e)}"})
+
+
+    @authenticated_user
+    @require_permission("gestionar_aeronaves")
     async def delete(self, aircraft_id):
         try:
             # --- CAMBIO 4: Usar la instancia self.controller ---
@@ -141,6 +156,21 @@ class RouteHandler(CORSRequestHandler):
 
     @authenticated_user
     @require_permission("gestionar_rutas")
+    async def put(self, route_id):
+        try:
+            data = json.loads(self.request.body)
+            updated_route = self.controller.update_route(int(route_id), **data)
+            self.write({"route": model_to_dict(updated_route)})
+        except ValueError as ve:
+            self.set_status(400)
+            self.write({"error": str(ve)})
+        except Exception as e:
+            self.set_status(500)
+            self.write({"error": f"Error interno del servidor: {str(e)}"})
+
+
+    @authenticated_user
+    @require_permission("gestionar_rutas")
     async def delete(self, route_id):
         try:
             # --- CAMBIO 4: Usar la instancia self.controller ---
@@ -170,23 +200,24 @@ class FlightHandler(CORSRequestHandler):
     @require_permission("gestionar_vuelos")
     async def get(self, flight_id=None):
         try:
+
             if flight_id:
+                # Si no es un manifiesto pero tiene ID, es una petición de un solo vuelo.
                 flight = self.controller.get_flight(int(flight_id))
                 if flight:
-                    # --- CORRECCIÓN APLICADA: Se elimina recurse=False ---
                     self.write(model_to_dict(flight))
                 else:
                     self.set_status(404)
                     self.write({"error": "Vuelo no encontrado"})
             else:
+                # Si no tiene ID, es una petición de todos los vuelos.
                 flights = self.controller.list_flights()
-                # --- CORRECCIÓN APLICADA: Se elimina recurse=False ---
                 self.write({"flights": [model_to_dict(f) for f in flights]})
         except Exception as e:
             print(f"\n!!!! ERROR CAPTURADO EN FLIGHTHANDLER.GET: {e} !!!!")
             traceback.print_exc()
             self.set_status(500)
-            self.write({"error": f"Error al obtener vuelos: {str(e)}"})
+            self.write({"error": f"Error al obtener datos de vuelos: {str(e)}"})
 
     @authenticated_user
     @require_permission("gestionar_vuelos")
@@ -212,6 +243,23 @@ class FlightHandler(CORSRequestHandler):
             traceback.print_exc()
             self.set_status(500)
             self.write({"error": f"Error interno del servidor: {str(e)}."})
+
+    @authenticated_user
+    @require_permission("gestionar_vuelos")
+    async def put(self, flight_id):
+        try:
+            data = json.loads(self.request.body)
+            updated_flight = self.controller.update_flight(int(flight_id), **data)
+            self.write({"flight": model_to_dict(updated_flight)})
+        except ValueError as ve:
+            self.set_status(400)  # Bad Request
+            self.write({"error": str(ve)})
+        except Exception as e:
+            print(f"\n!!!! ERROR CAPTURADO EN FLIGHTHANDLER.PUT: {e} !!!!")
+            traceback.print_exc()
+            self.set_status(500)
+            self.write({"error": f"Error interno del servidor: {str(e)}."})
+
 
     @authenticated_user
     @require_permission("gestionar_vuelos")
@@ -462,7 +510,7 @@ class EventRouteHandler(CORSRequestHandler):
         self.controller = controller
 
     @authenticated_user
-    @require_permission("gestionar_demanda")  # Permiso actualizado según tu código
+    @require_permission("gestionar_demanda")
     async def get(self, event_route_id=None):
         try:
             # --- CAMBIO 2: Usar la instancia self.controller ---
@@ -483,7 +531,7 @@ class EventRouteHandler(CORSRequestHandler):
             self.write({"error": f"Error al obtener rutas de evento: {str(e)}."})
 
     @authenticated_user
-    @require_permission("gestionar_demanda")  # Permiso actualizado
+    @require_permission("gestionar_demanda")
     async def post(self):
         try:
             data = json.loads(self.request.body)
@@ -507,13 +555,17 @@ class EventRouteHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}."})
 
     @authenticated_user
-    @require_permission("gestionar_demanda")  # Permiso actualizado
+    @require_permission("gestionar_demanda")
     async def put(self, event_route_id):
         try:
             data = json.loads(self.request.body)
-            # --- CAMBIO 4: Usar la instancia self.controller ---
-            event_route = self.controller.update_event_route(int(event_route_id), data["demanda_estimada"])
-            self.write({"event_route": model_to_dict(event_route)})
+
+            # Pasamos el diccionario 'data' completo usando **data
+            updated_event_route = self.controller.update_event_route(int(event_route_id), **data)
+
+            # Usamos model_to_dict para serializar la respuesta
+            self.write({"event_route": model_to_dict(updated_event_route)})
+
         except ValueError as ve:
             self.set_status(400)
             self.write({"error": str(ve)})
@@ -524,7 +576,7 @@ class EventRouteHandler(CORSRequestHandler):
             self.write({"error": f"Error interno del servidor: {str(e)}."})
 
     @authenticated_user
-    @require_permission("gestionar_demanda")  # Permiso actualizado
+    @require_permission("gestionar_demanda")
     async def delete(self, event_route_id):
         try:
             # --- CAMBIO 5: Usar la instancia self.controller ---
@@ -553,7 +605,7 @@ class RealCoverageHandler(CORSRequestHandler):
         self.controller = controller
 
     @authenticated_user
-    @require_permission("consultar_panel")  # Permiso actualizado según tu código
+    @require_permission("consultar_panel")
     async def get(self, coverage_id=None):
         """
         Maneja las peticiones GET para obtener una o todas las coberturas reales.

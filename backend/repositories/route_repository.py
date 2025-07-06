@@ -18,6 +18,14 @@ class RouteRepository:
     def get_all(self):
         return list(Route.select())
 
+    def update(self, route_id, **kwargs):
+        allowed_fields = ['origen', 'destino', 'distancia']
+        update_data = {k: v for k, v in kwargs.items() if k in allowed_fields}
+
+        query = Route.update(**update_data).where(Route.id == route_id)
+        rows_updated = query.execute()
+        return rows_updated > 0
+
     # SE ELIMINA @staticmethod
     def delete(self, route_id):
         route = Route.get_or_none(Route.id == route_id)

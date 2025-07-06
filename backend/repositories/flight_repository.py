@@ -49,6 +49,33 @@ class FlightRepository:
             .order_by(Flight.id)
         )
 
+    def update(self, flight_id, **kwargs):
+        allowed_fields = [
+            'codigo_vuelo',
+            'fecha_salida',
+            'fecha_llegada',
+            'ruta_evento_id',  # Corregido
+            'aeronave_id'  # Corregido
+        ]
+
+        update_data = {k: v for k, v in kwargs.items() if k in allowed_fields}
+
+        if 'aeronave_id' in update_data:
+            update_data['aeronave'] = update_data.pop('aeronave_id')
+
+        if 'ruta_evento_id' in update_data:
+            update_data['ruta_evento'] = update_data.pop('ruta_evento_id')
+
+        # Si no hay datos válidos para actualizar, no hacemos nada.
+        if not update_data:
+            return False
+
+        # Ahora la consulta recibe los nombres de campo correctos que Peewee espera.
+        query = Flight.update(**update_data).where(Flight.id == flight_id)
+        rows_updated = query.execute()
+
+        return rows_updated > 0
+
     # SE ELIMINA @staticmethod
     def delete(self, flight_id):
         flight = Flight.get_or_none(Flight.id == flight_id)
