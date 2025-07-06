@@ -86,6 +86,9 @@ def make_app():
         (r"/coverage_alert/([0-9]+)", CoverageAlertHandler, {"controller": coverage_alert_controller}),
         (r"/coverage/dashboard", CoverageHandler, {"coverage_controller": coverage_controller}),
         (r"/coverage/route_detail/([0-9]+)", CoverageHandler, {"coverage_controller": coverage_controller}),
+
+        #Nueva Funcionalidad
+        #(r"/api/flights/([0-9]+)/manifest", FlightHandler, {"controller": flight_controller}),
     ],
         default_handler_class=CORSRequestHandler,
         debug=True
