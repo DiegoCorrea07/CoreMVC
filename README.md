@@ -118,6 +118,14 @@ Se aplicaron dos patrones de diseño fundamentales para resolver problemas comun
 
 ---
 
+## API Adicional Implementada: Manifiesto de Vuelo
+
+- **Endpoint:** `GET http://localhost:8889/api/flights/{id}/manifest`
+- **Descripción:** Como parte de las mejoras, se propuso e implementó una nueva funcionalidad de API que no es un simple CRUD. Este endpoint recibe el ID de un vuelo y devuelve un objeto JSON consolidado que combina información de 6 tablas diferentes (Vuelo, Ruta, Aeronave, Evento, etc.), además de calcular campos de negocio como `asientos_disponibles`.
+- **Consumo:** Esta API es consumida por un nuevo componente de React (`FlightManifest.jsx`) que muestra la información en un modal, demostrando el flujo completo desde la propuesta de la API en el backend hasta su implementación y consumo en el frontend.
+
+---
+
 ## Enlace de página desplegada en render
 
 https://administracion-core-mvc-vr1.onrender.com
