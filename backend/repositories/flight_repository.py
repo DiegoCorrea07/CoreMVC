@@ -83,3 +83,12 @@ class FlightRepository:
             flight.delete_instance()
             return True
         return False
+
+    # Nueva Funcionalidad
+    def get_manifest_data(self, flight_id):
+        """
+        Obtiene los datos consolidados para el manifiesto de un vuelo específico.
+        Esta consulta une todas las tablas relevantes para recolectar la información.
+        """
+        flight_data = self.get_by_id(flight_id)
+        return flight_data

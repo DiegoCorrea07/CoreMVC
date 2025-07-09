@@ -55,7 +55,7 @@ def make_app():
     # Finalmente, se crean los controladores, inyectando sus dependencias (repositorios o servicios)
     aircraft_controller = AircraftController(repository=aircraft_repo)
     route_controller = RouteController(repository=route_repo)
-    flight_controller = FlightController(repository=flight_repo, event_route_repo=event_route_repo)
+    flight_controller = FlightController(repository=flight_repo, event_route_repo=event_route_repo, real_coverage_repo=real_coverage_repo)
     user_controller = UserController(repository=user_repo, secret_key=Config.SECRET_KEY)
     event_controller = EventController(repository=event_repo)
     event_route_controller = EventRouteController(repository=event_route_repo)
@@ -88,7 +88,7 @@ def make_app():
         (r"/coverage/route_detail/([0-9]+)", CoverageHandler, {"coverage_controller": coverage_controller}),
 
         #Nueva Funcionalidad
-        #(r"/api/flights/([0-9]+)/manifest", FlightHandler, {"controller": flight_controller}),
+        (r"/api/flights/([0-9]+)/manifest", FlightHandler, {"controller": flight_controller}),
     ],
         default_handler_class=CORSRequestHandler,
         debug=True

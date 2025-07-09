@@ -200,8 +200,17 @@ class FlightHandler(CORSRequestHandler):
     @require_permission("gestionar_vuelos")
     async def get(self, flight_id=None):
         try:
+            # --- Revisamos la URL para decidir qué hacer ---
+            if "/manifest" in self.request.path:
+                # Si la URL contiene "/manifest", llamamos al nuevo método del controlador (NUEVA FUNCIONALIDAD).
+                manifest_data = self.controller.get_manifest(int(flight_id))
+                if manifest_data:
+                    self.write(manifest_data)
+                else:
+                    self.set_status(404)
+                    self.write({"error": "Vuelo no encontrado para generar manifiesto."})
 
-            if flight_id:
+            elif flight_id:
                 # Si no es un manifiesto pero tiene ID, es una petición de un solo vuelo.
                 flight = self.controller.get_flight(int(flight_id))
                 if flight:
